@@ -1,82 +1,80 @@
 import streamlit as st
-import base64
+import json
+import random
+from datetime import datetime
 
-st.set_page_config(page_title="Smart AI Travel App", layout="centered")
-
-# === Glowing logo base64 ===
-logo_base64 = """
-iVBORw0KGgoAAAANSUhEUgAAAZAAAADICAYAAAA8tURZAAAABmJLR0QA/wD/AP+gvaeTAAABUUlE
-QVR4nO3QsQ0AIAwDQPf/p7dIQ1VGjG5rSTL2ODoAAAAAAAAAAAAAAAAAAAAAAABwu13Mbb0AAAD/
-7PUAAQAAAP7YAwABAAAA/tgDAAEAAAD+2AMAAQAAAP7YAwABAAAA/tgDAAEAAAD+2AMAAQAAAP7Y
-AwABAAAA/tgDAAEAAAD+2AMAAQAAAP7YAwABAAAA/tgDAAEAAAD+2AMAAQAAAP7YAwABAAAA/tgD
-AAEAAAD+2AMAAQAAAP7YAwABAAAA/tgDAAEAAAD+2AMAAQAAAP7YAwABAAAA/tgDAAEAAAD+2AMA
-AQAAAP7YAwABAAAA/tgDAAEAAAD+2AMAAQAAAP7YAwABAAAA/tgDAAEAAAD+2AMAAQAAAP7YAwAB
-AAAA/tgDAAEAAAD+2AMAAQAAAP7YAwABAAAA/tgDAAEAAAD+2AMAAQAAAP7YAwABAAAA/tgDAAEA
-AAD+2AMAAQAAAP7YAwABAAAA/tgDAAEAAAD+2AMAAQAAAP7YAwABAAAA/tgDAAEAAAD+2AMAAQAA
-AP7YAwABAAAA/tgDAAEAAAD+2AMAAQAAAAAAAAAAAAAAAAAAAAAAAPjrA8K+jBShpQAAAABJRU5E
-rkJggg==
-"""
-
-# === Whoosh sound base64 (short) ===
-whoosh_base64 = """
-UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YRAAAAAAgICAgICAgICAgICA
-gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC
-AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI
-CAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-"""
-
-# === Show glowing logo via HTML (avoids PIL error) ===
-def show_logo_html():
-    html = f"""
-    <div style='text-align: center; margin-top: 50px;'>
-        <img src="data:image/png;base64,{logo_base64}" width="400" />
-    </div>
-    """
-    st.markdown(html, unsafe_allow_html=True)
-
-# === Auto-play whoosh via HTML ===
-def play_whoosh_html():
-    html = f"""
-    <audio autoplay>
-        <source src="data:audio/wav;base64,{whoosh_base64}" type="audio/wav">
-    </audio>
-    """
-    st.markdown(html, unsafe_allow_html=True)
-
-# === Glowing button style ===
-button_html = '''
-<style>
-.tap-button {
-    background: linear-gradient(to right, #00c6ff, #0072ff);
-    border: none;
-    border-radius: 50px;
-    padding: 20px 60px;
-    font-size: 22px;
-    font-family: 'Poppins', sans-serif;
-    color: white;
-    cursor: pointer;
-    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s ease;
+# Mock travel database (replace with APIs like Google Maps later)
+travel_db = {
+    "Copenhagen": {
+        "Dubai": [
+            {"mode": "flight", "cost": 300, "time": 6*60, "details": "CPH->DXB direct"},
+            {"mode": "flight+bus", "cost": 200, "time": 10*60, "details": "CPH->AMS bus->DXB"},
+        ],
+        "Pakistan": [
+            {"mode": "flight", "cost": 450, "time": 8*60, "details": "CPH->ISB via DOH"},
+            {"mode": "flight+train", "cost": 350, "time": 12*60, "details": "CPH->OMN train->PAK"},
+        ]
+    }
 }
-.tap-button:hover {
-    transform: scale(1.05);
-    box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.4);
-}
-.tap-button:active {
-    transform: scale(0.98);
-    box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.2);
-}
-</style>
-<div style='text-align: center; padding-top: 100px;'>
-    <form action="/?activate=1" method="post">
-        <button type="submit" class="tap-button">Tap to Activate</button>
-    </form>
-</div>
-'''
 
-# === App logic ===
-if "activate" in st.query_params:
-    play_whoosh_html()
-    show_logo_html()
-else:
-    st.markdown(button_html, unsafe_allow_html=True)
+# Simulated Pattern Collapse Generator for route optimization
+def pattern_collapse_generator(routes, time_weight=0.5):
+    cost_weight = 1 - time_weight
+    max_cost = max(route["cost"] for route in routes)
+    max_time = max(route["time"] for route in routes)
+    best_route, best_score = None, float("inf")
+    
+    for route in routes:
+        norm_cost = route["cost"] / max_cost if max_cost else 0
+        norm_time = route["time"] / max_time if max_time else 0
+        score = cost_weight * norm_cost + time_weight * norm_time
+        if score < best_score:
+            best_score = score
+            best_route = route
+    return best_route
+
+# Streamlit app
+st.title("SHA’s Cosmic Travel Planner 🌌")
+st.write("Plan your trip with Earth Prime vibes! Enter your route and vibe.")
+
+# User input
+user_id = "shaw"  # Hardcoded for now, can use session ID later
+start_city = st.text_input("Starting city (e.g., Copenhagen)", value="Copenhagen")
+dest_city = st.text_input("Destination (e.g., Dubai)", value="Dubai")
+priority = st.selectbox("Priority", ["Balanced", "Cheapest", "Fastest"])
+time_weight = {"Balanced": 0.5, "Cheapest": 0.2, "Fastest": 0.8}[priority]
+
+# Memory layer: load/save preferences
+prefs_file = f"user_{user_id}_prefs.json"
+try:
+    with open(prefs_file, "r") as f:
+        prefs = json.load(f)
+    st.write(f"Welcome back, Shaw! Last vibe: {prefs.get('last_dest', 'None')}")
+except FileNotFoundError:
+    prefs = {}
+
+if st.button("Plan My Trip"):
+    # Validate input
+    start, dest = start_city.capitalize(), dest_city.capitalize()
+    if start not in travel_db or dest not in travel_db.get(start, {}):
+        st.error(f"No routes found from {start} to {dest}. Try again!")
+    else:
+        # Get best route
+        routes = travel_db[start][dest]
+        best_route = pattern_collapse_generator(routes, time_weight)
+        
+        # Display result
+        st.success(
+            f"**Best Route**: {best_route['details']}  \n"
+            f"**Cost**: ${best_route['cost']}  \n"
+            f"**Time**: {best_route['time']//60}h {best_route['time']%60}m"
+        )
+        
+        # Save preferences
+        prefs["last_dest"] = dest
+        prefs["last_priority"] = priority
+        with open(prefs_file, "w") as f:
+            json.dump(prefs, f)
+
+# Cosmic touch
+st.markdown("*Powered by Shaw’s Pattern Collapse Generator, channeling Earth Prime vibes.*")
