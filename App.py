@@ -11,8 +11,8 @@ AMADEUS_API_KEY = "BKarFHJJ1GGh0CVl0qhvmLL45jmeN4Uz"
 AMADEUS_API_SECRET = "Tr9aaVLysU5LQSWF"
 BASE_URL = "https://test.api.amadeus.com"
 
-# Get Amadeus access token
-@st.cache_data(show=True)
+# Get Amadeus access token (fixed: removed show_spinner)
+@st.cache_data
 def get_amadeus_token():
     url = f"{BASE_URL}/v1/security/oauth2/token"
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -133,13 +133,13 @@ def add_voice_scripts():
 
                 recognition.onend = function() {
                     isListening = false;
-                    document.getElementById('micButton').style.backgroundColor = '';
+                    document.getElementById('micButton_' + fieldId).style.backgroundColor = '';
                 };
 
                 if (!isListening) {
                     recognition.start();
                     isListening = true;
-                    document.getElementById('micButton').style.backgroundColor = '#ff4040';
+                    document.getElementById('micButton_' + fieldId).style.backgroundColor = '#ff4040';
                 }
             }
         </script>
@@ -210,10 +210,7 @@ if "trip_data" not in st.session_state:
 if st.session_state.slide == 1:
     st.markdown("<h3>Welcome to the Eternal Now of Travel! ✨</h3>", unsafe_allow_html=True)
     st.write("Tap below to start your cosmic journey.")
-    if st.markdown(
-        '<button class="glowing-button">Tap to Activate</button>',
-        unsafe_allow_html=True
-    ):
+    if st.button("Tap to Activate", key="tap_to_activate"):
         st.session_state.slide = 2
         st.experimental_rerun()
 
@@ -230,7 +227,7 @@ elif st.session_state.slide == 2:
         start_city = st.text_input("Starting city (e.g., CPH)", value="CPH", key="start_city")
     with col2:
         st.markdown(
-            '<button id="micButton" onclick="startListening(\'start_city\')" style="padding: 10px; border-radius: 50%;">🎙️</button>',
+            '<button id="micButton_start_city" onclick="startListening(\'start_city\')" style="padding: 10px; border-radius: 50%;">🎙️</button>',
             unsafe_allow_html=True
         )
     
@@ -239,7 +236,7 @@ elif st.session_state.slide == 2:
         dest_city = st.text_input("Destination (e.g., DXB)", value="DXB", key="dest_city")
     with col4:
         st.markdown(
-            '<button id="micButton" onclick="startListening(\'dest_city\')" style="padding: 10px; border-radius: 50%;">🎙️</button>',
+            '<button id="micButton_dest_city" onclick="startListening(\'dest_city\')" style="padding: 10px; border-radius: 50%;">🎙️</button>',
             unsafe_allow_html=True
         )
     
