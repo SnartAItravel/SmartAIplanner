@@ -88,4 +88,4 @@ if st.session_state.get("slide2_test", 2) == 2:
         st.markdown('<button id="tap-to-activate" class="tap-button" onclick="activateSlide()">Tap to Activate</button>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 else:
-    st.error("Slide state mismatch. Expected Slide 2, but current slide2_test is " + str(st.session_state.get("slide2_test")))p
+    st.error("Slide state mismatch. Expected Slide 2, but current slide2_test is " + str(st.session_state.get("slide2_test")))
