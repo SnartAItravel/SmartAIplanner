@@ -199,6 +199,11 @@ def add_voice_scripts():
                     }
                 }, 500);
             }
+
+            function activateSlide2() {
+                // Hidden input to trigger Python-side action
+                document.getElementById('hidden-activate-button').click();
+            }
             </script>
             """,
             height=0
@@ -312,6 +317,10 @@ try:
         .mic-button:hover {
             background-color: #e0e2e6;
         }
+        /* Hide the Streamlit button while keeping it functional */
+        #hidden-activate-button {
+            display: none !important;
+        }
         </style>
     """, unsafe_allow_html=True)
 except Exception as e:
@@ -331,14 +340,14 @@ try:
     if st.session_state.slide == 1:
         with st.container():
             st.markdown('<div class="center-container">', unsafe_allow_html=True)
-            st.markdown('<button id="tap-to-activate" class="tap-button" onclick="window.location.href=\'?activate=1\'">Tap to Activate</button>', unsafe_allow_html=True)
+            # Display the styled HTML button
+            st.markdown('<button id="tap-to-activate" class="tap-button" onclick="activateSlide2()">Tap to Activate</button>', unsafe_allow_html=True)
+            # Hidden Streamlit button to handle the click event
+            if st.button("Hidden Activate Button", key="hidden-activate-button"):
+                st.session_state.slide = 2
+                st.session_state.welcome_spoken = False
+                st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
-
-        # Handle the click via query params
-        if "activate" in st.query_params:
-            st.session_state.slide = 2
-            st.session_state.welcome_spoken = False
-            st.rerun()
 
     # Slide 2: Input
     elif st.session_state.slide == 2:
