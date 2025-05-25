@@ -1,14 +1,14 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# Clear session state to avoid conflicts with previous app
-if "slide2_initialized" not in st.session_state:
-    # Reset all session state keys
+# Use a unique state key to isolate Slide 2's state
+if "slide2_test_initialized" not in st.session_state:
+    # Hard reset session state to avoid conflicts
     for key in list(st.session_state.keys()):
         del st.session_state[key]
-    st.session_state.slide = 2  # Set to Slide 2
+    st.session_state.slide2_test = 2  # Unique key for Slide 2
     st.session_state.welcome_spoken = False
-    st.session_state.slide2_initialized = True  # Mark as initialized
+    st.session_state.slide2_test_initialized = True
 
 # JavaScript for button interactivity (placeholder for transition)
 try:
@@ -82,10 +82,10 @@ except Exception as e:
     st.error(f"Failed to load CSS: {str(e)}")
 
 # Slide 2: Centered Tap to Activate Button (Design and Layout Focus)
-if st.session_state.slide == 2:
+if st.session_state.get("slide2_test", 2) == 2:
     with st.container():
         st.markdown('<div class="center-container">', unsafe_allow_html=True)
         st.markdown('<button id="tap-to-activate" class="tap-button" onclick="activateSlide()">Tap to Activate</button>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 else:
-    st.error("Slide state mismatch. Expected Slide 2, but current slide is " + str(st.session_state.slide))
+    st.error("Slide state mismatch. Expected Slide 2, but current slide2_test is " + str(st.session_state.get("slide2_test")))p
