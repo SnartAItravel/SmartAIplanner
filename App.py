@@ -12,7 +12,7 @@ try:
 except ImportError:
     FUZZY_AVAILABLE = False
     process = None
-    st.warning("Fuzzy matching unavailable. Please install fuzzywuzzy. City suggestions will be limited.")
+    st.warning("Fuzzy matching unavailable. City suggestions will be limited.")
 
 # Amadeus API setup
 AMADEUS_API_KEY = "BKarFHJJ1GGh0CVl0qhvmLL45jmeN4Uz"
@@ -39,11 +39,13 @@ def get_amadeus_token():
         "client_id": AMADEUS_API_KEY,
         "client_secret": AMADEUS_API_SECRET
     }
-    response = requests.post(url, headers=headers, data=data)
-    if response.status_code == 200:
-        return response.json()["access_token"]
-    else:
-        st.error("Failed to authenticate with Amadeus API")
+    try:
+        response = requests.post(url, headers=headers, data=data)
+        if response.status_code == 200:
+            return response.json()["access_token"]
+        else:
+            return None
+    except Exception as e:
         return None
 
 # Validate IATA codes
@@ -57,7 +59,7 @@ def fetch_flights(origin, destination, departure_date, return_date=None):
     
     token = get_amadeus_token()
     if not token:
-        return None, "Authentication failed with Amadeus API."
+        return None, "Authentication failed with Amadeus API. Please try again later."
     
     url = f"{BASE_URL}/v2/shopping/flight-offers"
     headers = {"Authorization": f"Bearer {token}"}
@@ -77,7 +79,7 @@ def fetch_flights(origin, destination, departure_date, return_date=None):
         if response.status_code == 200:
             data = response.json().get("data", [])
             if not data:
-                return None, "No flights found for this route."
+                return None, "No flights found for this route on the selected dates."
             return data, None
         else:
             return None, f"Error fetching flights: {response.status_code} - {response.text}"
@@ -120,14 +122,14 @@ def pattern_collapse_generator(flights, time_weight=0.5):
     except Exception as e:
         return None
 
-# Smart city recognition (with fallback if fuzzywuzzy isn't available)
+# Smart city recognition
 def get_city_suggestion(user_input):
     if not user_input:
         return None, None
     cities = list(CITY_TO_IATA.keys())
     if FUZZY_AVAILABLE:
         best_match, score = process.extractOne(user_input, cities)
-        if score > 80:  # Confidence threshold
+        if score > 80:
             return best_match, CITY_TO_IATA[best_match]
     # Fallback: simple string matching
     user_input = user_input.lower()
@@ -141,6 +143,11 @@ def add_voice_scripts():
     components.html(
         """
         <script>
+            // Ensure DOM is fully loaded before binding events
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('DOM fully loaded for voice scripts');
+            });
+
             // Voice Output (Web Speech API)
             function speak(text) {
                 if ('speechSynthesis' in window) {
@@ -162,47 +169,50 @@ def add_voice_scripts():
 
             function startListening(fieldId) {
                 console.log('Starting speech recognition for field:', fieldId);
-                inputField = document.querySelector(`input[name="${fieldId}"]`);
-                if (!inputField) {
-                    console.error('Input field not found for ID:', fieldId);
-                    return;
-                }
-                if (!('webkitSpeechRecognition' in window)) {
-                    console.error('Speech recognition not supported in this browser.');
-                    alert('Speech recognition not supported. Try Chrome or Safari.');
-                    return;
-                }
+                // Retry finding the input field with a slight delay
+                setTimeout(() => {
+                    inputField = document.querySelector(`input[name="${fieldId}"]`);
+                    if (!inputField) {
+                        console.error('Input field not found for ID:', fieldId);
+                        return;
+                    }
+                    if (!('webkitSpeechRecognition' in window)) {
+                        console.error('Speech recognition not supported in this browser.');
+                        alert('Speech recognition not supported. Try Chrome or Safari.');
+                        return;
+                    }
 
-                recognition = new webkitSpeechRecognition();
-                recognition.continuous = false;
-                recognition.interimResults = false;
-                recognition.lang = 'en-US';
+                    recognition = new webkitSpeechRecognition();
+                    recognition.continuous = false;
+                    recognition.interimResults = false;
+                    recognition.lang = 'en-US';
 
-                recognition.onresult = function(event) {
-                    const transcript = event.results[0][0].transcript;
-                    console.log('Speech recognized:', transcript);
-                    inputField.value = transcript;
-                    inputField.dispatchEvent(new Event('input', { bubbles: true }));
-                };
+                    recognition.onresult = function(event) {
+                        const transcript = event.results[0][0].transcript;
+                        console.log('Speech recognized:', transcript);
+                        inputField.value = transcript;
+                        inputField.dispatchEvent(new Event('input', { bubbles: true }));
+                    };
 
-                recognition.onerror = function(event) {
-                    console.error('Speech recognition error:', event.error);
-                    alert('Speech recognition error: ' + event.error);
-                };
+                    recognition.onerror = function(event) {
+                        console.error('Speech recognition error:', event.error);
+                        alert('Speech recognition error: ' + event.error);
+                    };
 
-                recognition.onend = function() {
-                    isListening = false;
-                    const micButton = document.getElementById('micButton_' + fieldId);
-                    if (micButton) micButton.style.backgroundColor = '';
-                    console.log('Speech recognition ended.');
-                };
+                    recognition.onend = function() {
+                        isListening = false;
+                        const micButton = document.getElementById('micButton_' + fieldId);
+                        if (micButton) micButton.style.backgroundColor = '';
+                        console.log('Speech recognition ended.');
+                    };
 
-                if (!isListening) {
-                    recognition.start();
-                    isListening = true;
-                    const micButton = document.getElementById('micButton_' + fieldId);
-                    if (micButton) micButton.style.backgroundColor = '#ff4040';
-                }
+                    if (!isListening) {
+                        recognition.start();
+                        isListening = true;
+                        const micButton = document.getElementById('micButton_' + fieldId);
+                        if (micButton) micButton.style.backgroundColor = '#ff4040';
+                    }
+                }, 500); // Delay to ensure DOM is ready
             }
         </script>
         """,
@@ -214,28 +224,31 @@ st.markdown(
     """
     <style>
         .glowing-button {
-            background-color: #1E90FF;
+            background: linear-gradient(145deg, #1E90FF, #00BFFF); /* Gradient for depth */
             color: white;
-            padding: 15px 30px;
+            padding: 18px 36px;
             border: none;
-            border-radius: 25px;
-            font-size: 18px;
+            border-radius: 30px;
+            font-size: 20px;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 0 15px #1E90FF, 0 0 30px #1E90FF, 0 0 45px #1E90FF;
-            animation: pulse 1.5s infinite;
+            box-shadow: 0 0 20px #1E90FF, 0 0 40px #1E90FF, 0 0 60px #1E90FF;
+            animation: pulse 1.2s infinite;
             transition: all 0.3s ease;
             width: 100%;
+            max-width: 300px;
             text-align: center;
+            margin: 0 auto;
+            display: block;
         }
         .glowing-button:hover {
-            box-shadow: 0 0 25px #1E90FF, 0 0 40px #1E90FF, 0 0 60px #1E90FF;
-            background-color: #00BFFF;
+            box-shadow: 0 0 30px #1E90FF, 0 0 50px #1E90FF, 0 0 70px #1E90FF;
+            background: linear-gradient(145deg, #00BFFF, #1E90FF);
         }
         @keyframes pulse {
-            0% { box-shadow: 0 0 15px #1E90FF, 0 0 30px #1E90FF, 0 0 45px #1E90FF; }
-            50% { box-shadow: 0 0 20px #1E90FF, 0 0 40px #1E90FF, 0 0 60px #1E90FF; }
-            100% { box-shadow: 0 0 15px #1E90FF, 0 0 30px #1E90FF, 0 0 45px #1E90FF; }
+            0% { box-shadow: 0 0 20px #1E90FF, 0 0 40px #1E90FF, 0 0 60px #1E90FF; }
+            50% { box-shadow: 0 0 30px #1E90FF, 0 0 50px #1E90FF, 0 0 80px #1E90FF; }
+            100% { box-shadow: 0 0 20px #1E90FF, 0 0 40px #1E90FF, 0 0 60px #1E90FF; }
         }
         .stCheckbox > label {
             display: flex;
@@ -270,7 +283,7 @@ st.markdown(
             background-color: #1E90FF;
         }
         .stCheckbox > label > input:checked + span::after {
-            transform: translateX(23px);
+            transform: translateX(calc(100% - 23px)); /* Move fully to the right */
         }
         .calendar-container {
             position: fixed;
@@ -308,6 +321,13 @@ st.markdown(
         .mic-button:hover {
             background-color: #e0e2e6;
         }
+        /* Center the button on the screen */
+        .center-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
     </style>
     """,
     unsafe_allow_html=True
@@ -326,13 +346,14 @@ if "welcome_spoken" not in st.session_state:
 
 # Slide 1: Tap to Activate (only element on screen)
 if st.session_state.slide == 1:
-    # Clear the screen except for the button
-    st.markdown("<h3 style='text-align: center;'>Welcome to the Eternal Now of Travel! ✨</h3>", unsafe_allow_html=True)
-    st.write("")
-    if st.button("Tap to Activate", key="tap_to_activate"):
-        st.session_state.slide = 2
-        st.session_state.welcome_spoken = False
-        st.rerun()
+    # Center the button with no other text
+    with st.container():
+        st.markdown('<div class="center-container">', unsafe_allow_html=True)
+        if st.button("Tap to Activate", key="tap_to_activate"):
+            st.session_state.slide = 2
+            st.session_state.welcome_spoken = False
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # Slide 2: Input Form
 elif st.session_state.slide == 2:
