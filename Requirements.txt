@@ -1,3 +1,5 @@
 streamlit
 numpy
 requests
+fuzzywuzzy
+python-levenshtein
