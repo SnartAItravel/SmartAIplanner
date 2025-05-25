@@ -3,7 +3,7 @@ import base64
 
 st.set_page_config(page_title="Smart AI Travel App", layout="centered")
 
-# === Glowing splash logo (Base64 PNG) ===
+# === Glowing logo base64 ===
 logo_base64 = """
 iVBORw0KGgoAAAANSUhEUgAAAZAAAADICAYAAAA8tURZAAAABmJLR0QA/wD/AP+gvaeTAAABUUlE
 QVR4nO3QsQ0AIAwDQPf/p7dIQ1VGjG5rSTL2ODoAAAAAAAAAAAAAAAAAAAAAAABwu13Mbb0AAAD/
@@ -17,7 +17,7 @@ AP7YAwABAAAA/tgDAAEAAAD+2AMAAQAAAAAAAAAAAAAAAAAAAAAAAPjrA8K+jBShpQAAAABJRU5E
 rkJggg==
 """
 
-# === Real whoosh sound (Base64 WAV snippet) ===
+# === Whoosh sound base64 (short) ===
 whoosh_base64 = """
 UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YRAAAAAAgICAgICAgICAgICA
 gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC
@@ -25,16 +25,16 @@ AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI
 CAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
 """
 
-# === Show glowing logo using HTML to avoid image decoding errors ===
+# === Show glowing logo via HTML (avoids PIL error) ===
 def show_logo_html():
     html = f"""
     <div style='text-align: center; margin-top: 50px;'>
-        <img src="data:image/png;base64,{logo_base64}" width="360" />
+        <img src="data:image/png;base64,{logo_base64}" width="400" />
     </div>
     """
     st.markdown(html, unsafe_allow_html=True)
 
-# === Play whoosh sound via HTML audio autoplay ===
+# === Auto-play whoosh via HTML ===
 def play_whoosh_html():
     html = f"""
     <audio autoplay>
@@ -43,7 +43,7 @@ def play_whoosh_html():
     """
     st.markdown(html, unsafe_allow_html=True)
 
-# === Tap to Activate Button Styling ===
+# === Glowing button style ===
 button_html = '''
 <style>
 .tap-button {
@@ -74,7 +74,7 @@ button_html = '''
 </div>
 '''
 
-# === Main App Logic ===
+# === App logic ===
 if "activate" in st.query_params:
     play_whoosh_html()
     show_logo_html()
