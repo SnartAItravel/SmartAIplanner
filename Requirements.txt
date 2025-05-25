@@ -1,5 +1,5 @@
-streamlit
-numpy
-requests
-fuzzywuzzy
-python-levenshtein
+streamlit==1.37.0
+numpy==1.26.4
+requests==2.32.3
+fuzzywuzzy==0.18.0
+python-levenshtein==0.25.1
