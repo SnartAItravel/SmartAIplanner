@@ -3,18 +3,18 @@ import base64
 
 st.set_page_config(page_title="Smart AI Travel App", layout="centered")
 
-# === Valid test image (1x1 transparent pixel as PNG) ===
+# === Base64 Logo Image (1x1 transparent pixel for testing) ===
 logo_base64 = """
 iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAF/gL+OlPaJgAAAABJRU5ErkJggg==
 """
 
-# === Whoosh base64 (tiny real WAV snippet just for test) ===
+# === Base64 Whoosh Sound (short WAV snippet for testing) ===
 whoosh_base64 = """
 UklGRjQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YRAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICA
 gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI
 """
 
-# === Show the logo using <img> to avoid PIL error ===
+# === Show logo image using HTML to bypass PIL ===
 def show_logo_html():
     html = f"""
     <div style='text-align: center; margin-top: 50px;'>
@@ -23,7 +23,7 @@ def show_logo_html():
     """
     st.markdown(html, unsafe_allow_html=True)
 
-# === Auto-play whoosh sound using HTML <audio> ===
+# === Play whoosh sound using HTML audio autoplay ===
 def play_whoosh_html():
     html = f"""
     <audio autoplay>
@@ -32,7 +32,7 @@ def play_whoosh_html():
     """
     st.markdown(html, unsafe_allow_html=True)
 
-# === Glowing tap button ===
+# === Stylish Tap Button HTML ===
 button_html = '''
 <style>
 .tap-button {
@@ -63,9 +63,9 @@ button_html = '''
 </div>
 '''
 
-# === Main Logic ===
+# === Main App Logic ===
 if "activate" in st.query_params:
     play_whoosh_html()
     show_logo_html()
 else:
-    st.markdown(button_html, unsafe_allow_html=True)p
+    st.markdown(button_html, unsafe_allow_html=True)
