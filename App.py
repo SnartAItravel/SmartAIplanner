@@ -1,7 +1,7 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# State management for slides (minimal setup for Slide 1)
+# State management for slides
 if "slide" not in st.session_state:
     st.session_state.slide = 1
 if "welcome_spoken" not in st.session_state:
@@ -13,7 +13,6 @@ try:
         """
         <script>
         function activateSlide2() {
-            // Hidden input to trigger Python-side action
             document.getElementById('hidden-activate-button').click();
         }
         </script>
@@ -23,10 +22,30 @@ try:
 except Exception as e:
     st.error(f"Failed to load JavaScript: {str(e)}")
 
-# CSS Styling for the glowing button
+# CSS Styling for the centered glowing button
 try:
     st.markdown("""
         <style>
+        /* Ensure the app takes up the full viewport height */
+        html, body, [data-testid="stAppViewContainer"] {
+            height: 100vh !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+        }
+        .center-container {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            height: 100vh !important;
+            min-height: 100vh !important;
+            width: 100vw !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+        }
         .tap-button {
             background: linear-gradient(to right, #00c6ff, #0072ff) !important;
             border: none !important;
@@ -52,13 +71,6 @@ try:
             transform: scale(0.98) !important;
             box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.2) !important;
         }
-        .center-container {
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            height: 100vh !important;
-        }
-        /* Hide the Streamlit button while keeping it functional */
         #hidden-activate-button {
             display: none !important;
         }
@@ -67,15 +79,11 @@ try:
 except Exception as e:
     st.error(f"Failed to load CSS: {str(e)}")
 
-# Slide 1: Glowing Tap to Activate
+# Slide 1: Glowing Tap to Activate (Centered)
 if st.session_state.slide == 1:
     with st.container():
         st.markdown('<div class="center-container">', unsafe_allow_html=True)
-        # Display the styled HTML button
         st.markdown('<button id="tap-to-activate" class="tap-button" onclick="activateSlide2()">Tap to Activate</button>', unsafe_allow_html=True)
         # Hidden Streamlit button to handle the click event
-        if st.button("Hidden Activate Button", key="hidden-activate-button"):
-            st.session_state.slide = 2
-            st.session_state.welcome_spoken = False
-            st.rerun()
+        st.button("", key="hidden-activate-button", on_click=lambda: (setattr(st.session_state, "slide", 2), setattr(st.session_state, "welcome_spoken", False)))
         st.markdown('</div>', unsafe_allow_html=True)
