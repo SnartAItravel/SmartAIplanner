@@ -11,7 +11,7 @@ AMADEUS_API_KEY = "BKarFHJJ1GGh0CVl0qhvmLL45jmeN4Uz"
 AMADEUS_API_SECRET = "Tr9aaVLysU5LQSWF"
 BASE_URL = "https://test.api.amadeus.com"
 
-# Get Amadeus access token (fixed: removed show_spinner)
+# Get Amadeus access token
 @st.cache_data
 def get_amadeus_token():
     url = f"{BASE_URL}/v1/security/oauth2/token"
@@ -152,18 +152,26 @@ st.markdown(
     """
     <style>
         .glowing-button {
-            background-color: #00f;
+            background-color: #1E90FF; /* Dodger Blue */
             color: white;
             padding: 15px 30px;
             border: none;
             border-radius: 25px;
             font-size: 18px;
+            font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 0 10px #00f, 0 0 20px #00f, 0 0 30px #00f;
+            box-shadow: 0 0 15px #1E90FF, 0 0 30px #1E90FF, 0 0 45px #1E90FF;
+            animation: pulse 1.5s infinite;
             transition: all 0.3s ease;
         }
         .glowing-button:hover {
-            box-shadow: 0 0 20px #00f, 0 0 30px #00f, 0 0 40px #00f;
+            box-shadow: 0 0 25px #1E90FF, 0 0 40px #1E90FF, 0 0 60px #1E90FF;
+            background-color: #00BFFF; /* Lighter blue on hover */
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 15px #1E90FF, 0 0 30px #1E90FF, 0 0 45px #1E90FF; }
+            50% { box-shadow: 0 0 20px #1E90FF, 0 0 40px #1E90FF, 0 0 60px #1E90FF; }
+            100% { box-shadow: 0 0 15px #1E90FF, 0 0 30px #1E90FF, 0 0 45px #1E90FF; }
         }
         .calendar-container {
             position: fixed;
@@ -210,9 +218,13 @@ if "trip_data" not in st.session_state:
 if st.session_state.slide == 1:
     st.markdown("<h3>Welcome to the Eternal Now of Travel! ✨</h3>", unsafe_allow_html=True)
     st.write("Tap below to start your cosmic journey.")
-    if st.button("Tap to Activate", key="tap_to_activate"):
+    # Use Streamlit's button with custom CSS
+    if st.markdown(
+        '<button class="glowing-button">Tap to Activate</button>',
+        unsafe_allow_html=True
+    ):
         st.session_state.slide = 2
-        st.experimental_rerun()
+        st.rerun()  # Updated to st.rerun()
 
 # Slide 2: Input Form
 elif st.session_state.slide == 2:
@@ -270,7 +282,7 @@ elif st.session_state.slide == 2:
             "time_weight": time_weight
         }
         st.session_state.slide = 3
-        st.experimental_rerun()
+        st.rerun()  # Updated to st.rerun()
 
 # Slide 3: Flight Results
 elif st.session_state.slide == 3:
@@ -313,7 +325,7 @@ elif st.session_state.slide == 3:
     
     if st.button("New Search"):
         st.session_state.slide = 2
-        st.experimental_rerun()
+        st.rerun()  # Updated to st.rerun()
 
 # Cosmic touch
 st.markdown("*Powered by Shaw’s Pattern Collapse Generator, channeling Earth Prime vibes.*")
