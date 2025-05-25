@@ -4,24 +4,25 @@ from io import BytesIO
 
 st.set_page_config(page_title="Smart AI Travel App", layout="centered")
 
-# Base64-encoded image and audio (your actual base64 strings go here)
-logo_base64 = """YOUR_LOGO_BASE64_HERE"""
-whoosh_base64 = """YOUR_WHOOSH_BASE64_HERE"""
+# === EMBEDDED BASE64 CONTENT (REPLACE WITH YOUR ACTUAL STRINGS) ===
+logo_base64 = """<INSERT_YOUR_LOGO_BASE64_HERE>"""
+whoosh_base64 = """<INSERT_YOUR_WHOOSH_BASE64_HERE>"""
 
+# === SHOW LOGO FUNCTION ===
 def show_logo():
     image_data = base64.b64decode(logo_base64)
     st.image(BytesIO(image_data), caption="", use_container_width=True)
 
+# === PLAY AUDIO USING HTML (AUTO-PLAY) ===
 def play_whoosh_html():
-    audio_data = base64.b64decode(whoosh_base64)
-    audio_base64 = base64.b64encode(audio_data).decode()
-    audio_html = f"""
+    html = f"""
     <audio autoplay>
-        <source src="data:audio/wav;base64,{audio_base64}" type="audio/wav">
+        <source src="data:audio/wav;base64,{whoosh_base64}" type="audio/wav">
     </audio>
     """
-    st.markdown(audio_html, unsafe_allow_html=True)
+    st.markdown(html, unsafe_allow_html=True)
 
+# === STYLED BUTTON HTML ===
 button_html = '''
 <style>
 .tap-button {
@@ -52,6 +53,7 @@ button_html = '''
 </div>
 '''
 
+# === MAIN APP LOGIC ===
 if "activate" in st.query_params:
     play_whoosh_html()
     show_logo()
