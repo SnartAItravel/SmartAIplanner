@@ -1,9 +1,14 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# State management (set to Slide 2 for this standalone program)
-if "slide" not in st.session_state:
-    st.session_state.slide = 2
+# Clear session state to avoid conflicts with previous app
+if "slide2_initialized" not in st.session_state:
+    # Reset all session state keys
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.session_state.slide = 2  # Set to Slide 2
+    st.session_state.welcome_spoken = False
+    st.session_state.slide2_initialized = True  # Mark as initialized
 
 # JavaScript for button interactivity (placeholder for transition)
 try:
@@ -82,3 +87,5 @@ if st.session_state.slide == 2:
         st.markdown('<div class="center-container">', unsafe_allow_html=True)
         st.markdown('<button id="tap-to-activate" class="tap-button" onclick="activateSlide()">Tap to Activate</button>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
+else:
+    st.error("Slide state mismatch. Expected Slide 2, but current slide is " + str(st.session_state.slide))
