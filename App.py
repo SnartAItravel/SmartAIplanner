@@ -1,27 +1,29 @@
 import streamlit as st
 import base64
-from io import BytesIO
 
 st.set_page_config(page_title="Smart AI Travel App", layout="centered")
 
-# --- Test Base64 Image (invisible 1x1 PNG — just for debugging) ---
+# === Valid test image (1x1 transparent pixel as PNG) ===
 logo_base64 = """
 iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAF/gL+OlPaJgAAAABJRU5ErkJggg==
 """
 
-# --- Real Base64 Whoosh Sound (short WAV) ---
+# === Whoosh base64 (tiny real WAV snippet just for test) ===
 whoosh_base64 = """
 UklGRjQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YRAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICA
 gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI
-CAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-"""  # This is short and valid; just for the audio test
+"""
 
-# --- Function to Show Image ---
-def show_logo():
-    image_data = base64.b64decode(logo_base64)
-    st.image(BytesIO(image_data), caption="", use_container_width=True)
+# === Show the logo using <img> to avoid PIL error ===
+def show_logo_html():
+    html = f"""
+    <div style='text-align: center; margin-top: 50px;'>
+        <img src="data:image/png;base64,{logo_base64}" width="250" />
+    </div>
+    """
+    st.markdown(html, unsafe_allow_html=True)
 
-# --- Function to Auto-Play Audio ---
+# === Auto-play whoosh sound using HTML <audio> ===
 def play_whoosh_html():
     html = f"""
     <audio autoplay>
@@ -30,7 +32,7 @@ def play_whoosh_html():
     """
     st.markdown(html, unsafe_allow_html=True)
 
-# --- Glowing Tap Button ---
+# === Glowing tap button ===
 button_html = '''
 <style>
 .tap-button {
@@ -61,9 +63,9 @@ button_html = '''
 </div>
 '''
 
-# --- Main Logic ---
+# === Main Logic ===
 if "activate" in st.query_params:
     play_whoosh_html()
-    show_logo()
+    show_logo_html()
 else:
-    st.markdown(button_html, unsafe_allow_html=True)
+    st.markdown(button_html, unsafe_allow_html=True)p
