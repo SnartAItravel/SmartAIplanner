@@ -2,6 +2,7 @@ import streamlit as st
 import json
 import random
 from datetime import datetime
+import streamlit.components.v1 as components
 
 # Mock travel database (replace with APIs like Google Maps later)
 travel_db = {
@@ -33,6 +34,22 @@ def pattern_collapse_generator(routes, time_weight=0.5):
             best_route = route
     return best_route
 
+# JavaScript for voiceover using Web Speech API
+def speak_text(text):
+    # Inject JavaScript to use browser's speech synthesis
+    js_code = f"""
+    <script>
+        function speak() {{
+            var msg = new SpeechSynthesisUtterance("{text}");
+            msg.lang = 'en-US';
+            msg.rate = 1.0;
+            window.speechSynthesis.speak(msg);
+        }}
+        speak();
+    </script>
+    """
+    components.html(js_code)
+
 # Streamlit app
 st.title("SHA’s Cosmic Travel Planner 🌌")
 st.write("Plan your trip with Earth Prime vibes! Enter your route and vibe.")
@@ -57,18 +74,22 @@ if st.button("Plan My Trip"):
     # Validate input
     start, dest = start_city.capitalize(), dest_city.capitalize()
     if start not in travel_db or dest not in travel_db.get(start, {}):
-        st.error(f"No routes found from {start} to {dest}. Try again!")
+        error_msg = f"No routes found from {start} to {dest}. Try again!"
+        st.error(error_msg)
+        speak_text(error_msg)
     else:
         # Get best route
         routes = travel_db[start][dest]
         best_route = pattern_collapse_generator(routes, time_weight)
         
-        # Display result
-        st.success(
-            f"**Best Route**: {best_route['details']}  \n"
-            f"**Cost**: ${best_route['cost']}  \n"
-            f"**Time**: {best_route['time']//60}h {best_route['time']%60}m"
+        # Display and speak result
+        result = (
+            f"Best Route: {best_route['details']}. "
+            f"Cost: ${best_route['cost']}. "
+            f"Time: {best_route['time']//60} hours {best_route['time']%60} minutes."
         )
+        st.success(result)
+        speak_text(result)
         
         # Save preferences
         prefs["last_dest"] = dest
