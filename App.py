@@ -3,14 +3,23 @@ import streamlit.components.v1 as components
 import json
 import requests
 from datetime import datetime, timedelta
-import base64
-import os
 import re
+from fuzzywuzzy import process
 
 # Amadeus API setup
 AMADEUS_API_KEY = "BKarFHJJ1GGh0CVl0qhvmLL45jmeN4Uz"
 AMADEUS_API_SECRET = "Tr9aaVLysU5LQSWF"
 BASE_URL = "https://test.api.amadeus.com"
+
+# City to IATA code mapping (simplified for demo)
+CITY_TO_IATA = {
+    "Copenhagen": "CPH",
+    "Madrid": "MAD",
+    "Dubai": "DXB",
+    "Pakistan": "ISB",  # Using Islamabad as a proxy
+    "Amsterdam": "AMS",
+    "Dere": "DER",  # Assuming "Dere" might be a typo; we'll handle it
+}
 
 # Get Amadeus access token
 @st.cache_data
@@ -29,11 +38,11 @@ def get_amadeus_token():
         st.error("Failed to authenticate with Amadeus API")
         return None
 
-# Validate IATA codes (3-letter airport codes)
+# Validate IATA codes
 def is_valid_iata(code):
     return bool(re.match(r"^[A-Z]{3}$", code))
 
-# Fetch flight offers from Amadeus with better error handling
+# Fetch flight offers from Amadeus
 def fetch_flights(origin, destination, departure_date, return_date=None):
     if not is_valid_iata(origin) or not is_valid_iata(destination):
         return None, "Invalid airport codes. Use 3-letter IATA codes (e.g., CPH for Copenhagen)."
@@ -67,7 +76,7 @@ def fetch_flights(origin, destination, departure_date, return_date=None):
     except Exception as e:
         return None, f"Error connecting to Amadeus API: {str(e)}"
 
-# Simulated Pattern Collapse Generator (improved error handling)
+# Simulated Pattern Collapse Generator
 def pattern_collapse_generator(flights, time_weight=0.5):
     if not flights:
         return None
@@ -77,7 +86,6 @@ def pattern_collapse_generator(flights, time_weight=0.5):
     try:
         for flight in flights:
             price = float(flight["price"]["total"])
-            # Parse duration
             duration = flight["itineraries"][0]["duration"].replace("PT", "").replace("H", "h").replace("M", "m")
             hours = 0
             minutes = 0
@@ -88,7 +96,6 @@ def pattern_collapse_generator(flights, time_weight=0.5):
                 minutes = int(duration.replace("m", ""))
             total_minutes = hours * 60 + minutes
             
-            # Normalize and score
             max_price = max(float(f["price"]["total"]) for f in flights)
             max_time = max(
                 sum(int(s["duration"].replace("PT", "").replace("H", "h").replace("M", "m").split("h")[0]) * 60 +
@@ -105,6 +112,16 @@ def pattern_collapse_generator(flights, time_weight=0.5):
     except Exception as e:
         return None
 
+# Smart city recognition
+def get_city_suggestion(user_input):
+    if not user_input:
+        return None, None
+    cities = list(CITY_TO_IATA.keys())
+    best_match, score = process.extractOne(user_input, cities)
+    if score > 80:  # Confidence threshold
+        return best_match, CITY_TO_IATA[best_match]
+    return None, None
+
 # JavaScript for voice input and output
 def add_voice_scripts():
     components.html(
@@ -112,11 +129,16 @@ def add_voice_scripts():
         <script>
             // Voice Output (Web Speech API)
             function speak(text) {
-                var msg = new SpeechSynthesisUtterance(text);
-                msg.lang = 'en-US';
-                msg.rate = 0.9;  // Slightly slower for natural feel
-                msg.pitch = 1.0; // Natural pitch
-                window.speechSynthesis.speak(msg);
+                if ('speechSynthesis' in window) {
+                    var msg = new SpeechSynthesisUtterance(text);
+                    msg.lang = 'en-US';
+                    msg.rate = 0.9;
+                    msg.pitch = 1.0;
+                    window.speechSynthesis.speak(msg);
+                    console.log('Speaking:', text);
+                } else {
+                    console.error('Speech synthesis not supported in this browser.');
+                }
             }
 
             // Voice Input (WebRTC)
@@ -125,13 +147,15 @@ def add_voice_scripts():
             let inputField = null;
 
             function startListening(fieldId) {
+                console.log('Starting speech recognition for field:', fieldId);
                 inputField = document.querySelector(`input[name="${fieldId}"]`);
                 if (!inputField) {
                     console.error('Input field not found for ID:', fieldId);
                     return;
                 }
                 if (!('webkitSpeechRecognition' in window)) {
-                    alert('Speech recognition not supported in this browser. Try Chrome or Safari.');
+                    console.error('Speech recognition not supported in this browser.');
+                    alert('Speech recognition not supported. Try Chrome or Safari.');
                     return;
                 }
 
@@ -142,19 +166,21 @@ def add_voice_scripts():
 
                 recognition.onresult = function(event) {
                     const transcript = event.results[0][0].transcript;
+                    console.log('Speech recognized:', transcript);
                     inputField.value = transcript;
                     inputField.dispatchEvent(new Event('input', { bubbles: true }));
                 };
 
                 recognition.onerror = function(event) {
                     console.error('Speech recognition error:', event.error);
-                    alert('Error with speech recognition: ' + event.error);
+                    alert('Speech recognition error: ' + event.error);
                 };
 
                 recognition.onend = function() {
                     isListening = false;
                     const micButton = document.getElementById('micButton_' + fieldId);
                     if (micButton) micButton.style.backgroundColor = '';
+                    console.log('Speech recognition ended.');
                 };
 
                 if (!isListening) {
@@ -190,7 +216,7 @@ st.markdown(
         }
         .glowing-button:hover {
             box-shadow: 0 0 25px #1E90FF, 0 0 40px #1E90FF, 0 0 60px #1E90FF;
-            background-color: #00BFFF; /* Lighter blue on hover */
+            background-color: #00BFFF;
         }
         @keyframes pulse {
             0% { box-shadow: 0 0 15px #1E90FF, 0 0 30px #1E90FF, 0 0 45px #1E90FF; }
@@ -225,13 +251,13 @@ st.markdown(
             top: 2px;
             background-color: white;
             border-radius: 50%;
-            transition: transform 0.3s;
+            transition: transform 0.3s ease;
         }
         .stCheckbox > label > input:checked + span {
             background-color: #1E90FF;
         }
         .stCheckbox > label > input:checked + span::after {
-            transform: translateX(25px);
+            transform: translateX(23px); /* Adjusted to move fully to the right */
         }
         .calendar-container {
             position: fixed;
@@ -286,18 +312,20 @@ if "trip_data" not in st.session_state:
 if "welcome_spoken" not in st.session_state:
     st.session_state.welcome_spoken = False
 
-# Slide 1: Tap to Activate
+# Slide 1: Tap to Activate (only element on screen)
 if st.session_state.slide == 1:
-    st.markdown("<h3>Welcome to the Eternal Now of Travel! ✨</h3>", unsafe_allow_html=True)
-    st.write("Tap below to start your cosmic journey.")
+    # Clear the screen except for the button
+    st.empty()  # Clear previous elements
+    st.markdown("<h3 style='text-align: center;'>Welcome to the Eternal Now of Travel! ✨</h3>", unsafe_allow_html=True)
+    st.write("")
     if st.button("Tap to Activate", key="tap_to_activate"):
         st.session_state.slide = 2
-        st.session_state.welcome_spoken = False  # Reset welcome message flag
+        st.session_state.welcome_spoken = False
         st.rerun()
 
 # Slide 2: Input Form
 elif st.session_state.slide == 2:
-    # Play welcome voiceover on first load of Slide 2
+    # Play welcome voiceover
     if not st.session_state.welcome_spoken:
         welcome_msg = (
             "Welcome to the Smart AI Planner. I can help you choose destinations without needing to do anything. "
@@ -308,13 +336,22 @@ elif st.session_state.slide == 2:
     
     st.write("Plan your trip with Earth Prime vibes! Enter your route and vibe.")
     
-    # Toggle for round trip (styled as a switch)
+    # Toggle for round trip
     is_round_trip = st.checkbox("Round Trip", value=False, key="round_trip")
     
-    # Input fields with voice input button
+    # Input fields with smart city recognition and voice input
     col1, col2 = st.columns([3, 1])
     with col1:
-        start_city = st.text_input("Starting city (e.g., CPH)", value="CPH", key="start_city")
+        start_input = st.text_input("Starting city (e.g., Copenhagen or CPH)", value="", key="start_city")
+        start_suggestion, start_iata = get_city_suggestion(start_input)
+        if start_suggestion and start_iata:
+            st.write(f"Did you mean: {start_suggestion} ({start_iata})?")
+            if st.button(f"Use {start_suggestion}", key="use_start"):
+                start_city = start_iata
+            else:
+                start_city = start_input.upper()
+        else:
+            start_city = start_input.upper()
     with col2:
         st.markdown(
             '<button id="micButton_start_city" class="mic-button" onclick="startListening(\'start_city\')">🎙️</button>',
@@ -323,7 +360,16 @@ elif st.session_state.slide == 2:
     
     col3, col4 = st.columns([3, 1])
     with col3:
-        dest_city = st.text_input("Destination (e.g., DXB)", value="DXB", key="dest_city")
+        dest_input = st.text_input("Destination (e.g., Madrid or DXB)", value="", key="dest_city")
+        dest_suggestion, dest_iata = get_city_suggestion(dest_input)
+        if dest_suggestion and dest_iata:
+            st.write(f"Did you mean: {dest_suggestion} ({dest_iata})?")
+            if st.button(f"Use {dest_suggestion}", key="use_dest"):
+                dest_city = dest_iata
+            else:
+                dest_city = dest_input.upper()
+        else:
+            dest_city = dest_input.upper()
     with col4:
         st.markdown(
             '<button id="micButton_dest_city" class="mic-button" onclick="startListening(\'dest_city\')">🎙️</button>',
@@ -353,8 +399,8 @@ elif st.session_state.slide == 2:
     
     if st.button("Search Flights"):
         st.session_state.trip_data = {
-            "start": start_city.upper(),
-            "dest": dest_city.upper(),
+            "start": start_city,
+            "dest": dest_city,
             "departure_date": departure_date.strftime("%Y-%m-%d"),
             "return_date": return_date.strftime("%Y-%m-%d") if return_date else None,
             "time_weight": time_weight
@@ -402,7 +448,7 @@ elif st.session_state.slide == 3:
     
     if st.button("New Search"):
         st.session_state.slide = 2
-        st.session_state.welcome_spoken = False  # Reset welcome message for next search
+        st.session_state.welcome_spoken = False
         st.rerun()
 
 # Cosmic touch
