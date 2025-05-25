@@ -4,6 +4,7 @@ import json
 import requests
 from datetime import datetime, timedelta
 import re
+import traceback
 
 # Try to import fuzzywuzzy, with a fallback
 try:
@@ -18,16 +19,6 @@ except ImportError:
 AMADEUS_API_KEY = "BKarFHJJ1GGh0CVl0qhvmLL45jmeN4Uz"
 AMADEUS_API_SECRET = "Tr9aaVLysU5LQSWF"
 BASE_URL = "https://test.api.amadeus.com"
-
-# City to IATA code mapping
-CITY_TO_IATA = {
-    "Copenhagen": "CPH",
-    "Madrid": "MAD",
-    "Dubai": "DXB",
-    "Pakistan": "ISB",  # Using Islamabad as a proxy
-    "Amsterdam": "AMS",
-    "Dere": "DER",  # Assuming "Dere" might be a typo; we'll handle it
-}
 
 # Get Amadeus access token
 @st.cache_data
@@ -46,6 +37,7 @@ def get_amadeus_token():
         else:
             return None
     except Exception as e:
+        st.error(f"Failed to authenticate with Amadeus API: {str(e)}")
         return None
 
 # Validate IATA codes
@@ -140,91 +132,94 @@ def get_city_suggestion(user_input):
 
 # JavaScript for voice input and output
 def add_voice_scripts():
-    components.html(
-        """
-        <script>
-            // Ensure DOM is fully loaded before binding events
-            document.addEventListener('DOMContentLoaded', function() {
-                console.log('DOM fully loaded for voice scripts');
-            });
+    try:
+        components.html(
+            """
+            <script>
+                // Ensure DOM is fully loaded before binding events
+                document.addEventListener('DOMContentLoaded', function() {
+                    console.log('DOM fully loaded for voice scripts');
+                });
 
-            // Voice Output (Web Speech API)
-            function speak(text) {
-                if ('speechSynthesis' in window) {
-                    var msg = new SpeechSynthesisUtterance(text);
-                    msg.lang = 'en-US';
-                    msg.rate = 0.9;
-                    msg.pitch = 1.0;
-                    window.speechSynthesis.speak(msg);
-                    console.log('Speaking:', text);
-                } else {
-                    console.error('Speech synthesis not supported in this browser.');
+                // Voice Output (Web Speech API)
+                function speak(text) {
+                    if ('speechSynthesis' in window) {
+                        var msg = new SpeechSynthesisUtterance(text);
+                        msg.lang = 'en-US';
+                        msg.rate = 0.9;
+                        msg.pitch = 1.0;
+                        window.speechSynthesis.speak(msg);
+                        console.log('Speaking:', text);
+                    } else {
+                        console.error('Speech synthesis not supported in this browser.');
+                    }
                 }
-            }
 
-            // Voice Input (WebRTC)
-            let recognition = null;
-            let isListening = false;
-            let inputField = null;
+                // Voice Input (WebRTC)
+                let recognition = null;
+                let isListening = false;
+                let inputField = null;
 
-            function startListening(fieldId) {
-                console.log('Starting speech recognition for field:', fieldId);
-                // Retry finding the input field with a slight delay
-                setTimeout(() => {
-                    inputField = document.querySelector(`input[name="${fieldId}"]`);
-                    if (!inputField) {
-                        console.error('Input field not found for ID:', fieldId);
-                        return;
-                    }
-                    if (!('webkitSpeechRecognition' in window)) {
-                        console.error('Speech recognition not supported in this browser.');
-                        alert('Speech recognition not supported. Try Chrome or Safari.');
-                        return;
-                    }
+                function startListening(fieldId) {
+                    console.log('Starting speech recognition for field:', fieldId);
+                    // Retry finding the input field with a delay
+                    setTimeout(() => {
+                        inputField = document.querySelector(`input[name="${fieldId}"]`);
+                        if (!inputField) {
+                            console.error('Input field not found for ID:', fieldId);
+                            return;
+                        }
+                        if (!('webkitSpeechRecognition' in window)) {
+                            console.error('Speech recognition not supported in this browser.');
+                            alert('Speech recognition not supported. Try Chrome or Safari.');
+                            return;
+                        }
 
-                    recognition = new webkitSpeechRecognition();
-                    recognition.continuous = false;
-                    recognition.interimResults = false;
-                    recognition.lang = 'en-US';
+                        recognition = new webkitSpeechRecognition();
+                        recognition.continuous = false;
+                        recognition.interimResults = false;
+                        recognition.lang = 'en-US';
 
-                    recognition.onresult = function(event) {
-                        const transcript = event.results[0][0].transcript;
-                        console.log('Speech recognized:', transcript);
-                        inputField.value = transcript;
-                        inputField.dispatchEvent(new Event('input', { bubbles: true }));
-                    };
+                        recognition.onresult = function(event) {
+                            const transcript = event.results[0][0].transcript;
+                            console.log('Speech recognized:', transcript);
+                            inputField.value = transcript;
+                            inputField.dispatchEvent(new Event('input', { bubbles: true }));
+                        };
 
-                    recognition.onerror = function(event) {
-                        console.error('Speech recognition error:', event.error);
-                        alert('Speech recognition error: ' + event.error);
-                    };
+                        recognition.onerror = function(event) {
+                            console.error('Speech recognition error:', event.error);
+                            alert('Speech recognition error: ' + event.error);
+                        };
 
-                    recognition.onend = function() {
-                        isListening = false;
-                        const micButton = document.getElementById('micButton_' + fieldId);
-                        if (micButton) micButton.style.backgroundColor = '';
-                        console.log('Speech recognition ended.');
-                    };
+                        recognition.onend = function() {
+                            isListening = false;
+                            const micButton = document.getElementById('micButton_' + fieldId);
+                            if (micButton) micButton.style.backgroundColor = '';
+                            console.log('Speech recognition ended.');
+                        };
 
-                    if (!isListening) {
-                        recognition.start();
-                        isListening = true;
-                        const micButton = document.getElementById('micButton_' + fieldId);
-                        if (micButton) micButton.style.backgroundColor = '#ff4040';
-                    }
-                }, 500); // Delay to ensure DOM is ready
-            }
-        </script>
-        """,
-        height=0
-    )
+                        if (!isListening) {
+                            recognition.start();
+                            isListening = true;
+                            const micButton = document.getElementById('micButton_' + fieldId);
+                            if (micButton) micButton.style.backgroundColor = '#ff4040';
+                        }
+                    }, 500);
+                }
+            </script>
+            """,
+            height=0
+        )
+    except Exception as e:
+        st.error(f"Error loading voice scripts: {str(e)}")
 
 # CSS for glowing button, toggle switch, and sliding calendar
 st.markdown(
     """
     <style>
         .glowing-button {
-            background: linear-gradient(145deg, #1E90FF, #00BFFF); /* Gradient for depth */
+            background: linear-gradient(145deg, #1E90FF, #00BFFF);
             color: white;
             padding: 18px 36px;
             border: none;
@@ -283,7 +278,7 @@ st.markdown(
             background-color: #1E90FF;
         }
         .stCheckbox > label > input:checked + span::after {
-            transform: translateX(calc(100% - 23px)); /* Move fully to the right */
+            transform: translateX(calc(100% - 23px));
         }
         .calendar-container {
             position: fixed;
@@ -321,7 +316,6 @@ st.markdown(
         .mic-button:hover {
             background-color: #e0e2e6;
         }
-        /* Center the button on the screen */
         .center-container {
             display: flex;
             justify-content: center;
@@ -333,8 +327,21 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# City to IATA code mapping (moved after CSS to avoid initialization issues)
+CITY_TO_IATA = {
+    "Copenhagen": "CPH",
+    "Madrid": "MAD",
+    "Dubai": "DXB",
+    "Pakistan": "ISB",
+    "Amsterdam": "AMS",
+    "Dere": "DER",
+}
+
 # Streamlit app with slides
-add_voice_scripts()  # Add voice scripts
+try:
+    add_voice_scripts()  # Add voice scripts
+except Exception as e:
+    st.error(f"Failed to initialize voice scripts: {str(e)}")
 
 # State management for slides
 if "slide" not in st.session_state:
@@ -346,7 +353,6 @@ if "welcome_spoken" not in st.session_state:
 
 # Slide 1: Tap to Activate (only element on screen)
 if st.session_state.slide == 1:
-    # Center the button with no other text
     with st.container():
         st.markdown('<div class="center-container">', unsafe_allow_html=True)
         if st.button("Tap to Activate", key="tap_to_activate"):
@@ -484,4 +490,7 @@ elif st.session_state.slide == 3:
         st.rerun()
 
 # Cosmic touch
-st.markdown("*Powered by Shaw’s Pattern Collapse Generator, channeling Earth Prime vibes.*")
+try:
+    st.markdown("*Powered by Shaw’s Pattern Collapse Generator, channeling Earth Prime vibes.*")
+except Exception as e:
+    pass  # Suppress footer errors
