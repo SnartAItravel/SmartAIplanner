@@ -140,139 +140,302 @@ def add_voice_scripts():
                 if ('speechSynthesis' in window) {
                     const msg = new SpeechSynthesisUtterance(text);
                     msg.lang = 'en-US';
+                    msg.rate = 0.9;
+                    msg.pitch = 1.0;
                     window.speechSynthesis.speak(msg);
+                    console.log('Speaking:', text);
+                } else {
+                    console.error('Speech synthesis not supported in this browser.');
                 }
+            }
+
+            let recognition = null;
+            let isListening = false;
+            let inputField = null;
+
+            function startListening(fieldId) {
+                console.log('Starting speech recognition for field:', fieldId);
+                setTimeout(() => {
+                    inputField = document.querySelector(`input[name="${fieldId}"]`);
+                    if (!inputField) {
+                        console.error('Input field not found for ID:', fieldId);
+                        return;
+                    }
+                    if (!('webkitSpeechRecognition' in window)) {
+                        console.error('Speech recognition not supported in this browser.');
+                        alert('Speech recognition not supported. Try Chrome or Safari.');
+                        return;
+                    }
+
+                    recognition = new webkitSpeechRecognition();
+                    recognition.continuous = false;
+                    recognition.interimResults = false;
+                    recognition.lang = 'en-US';
+
+                    recognition.onresult = function(event) {
+                        const transcript = event.results[0][0].transcript;
+                        console.log('Speech recognized:', transcript);
+                        inputField.value = transcript;
+                        inputField.dispatchEvent(new Event('input', { bubbles: true }));
+                    };
+
+                    recognition.onerror = function(event) {
+                        console.error('Speech recognition error:', event.error);
+                        alert('Speech recognition error: ' + event.error);
+                    };
+
+                    recognition.onend = function() {
+                        isListening = false;
+                        const micButton = document.getElementById('micButton_' + fieldId);
+                        if (micButton) micButton.style.backgroundColor = '';
+                        console.log('Speech recognition ended.');
+                    };
+
+                    if (!isListening) {
+                        recognition.start();
+                        isListening = true;
+                        const micButton = document.getElementById('micButton_' + fieldId);
+                        if (micButton) micButton.style.backgroundColor = '#ff4040';
+                    }
+                }, 500);
             }
             </script>
             """,
             height=0
         )
-    except:
-        st.error("Voice script load failed.")
+    except Exception as e:
+        st.error(f"Voice script load failed: {str(e)}")
 
-# === CSS Styling for glowing button (Slide 1) ===
-st.markdown("""
-    <style>
-    .tap-button {
-        background: linear-gradient(to right, #00c6ff, #0072ff);
-        border: none;
-        border-radius: 50px;
-        padding: 20px 60px;
-        font-size: 22px;
-        font-family: 'Poppins', sans-serif;
-        color: white;
-        cursor: pointer;
-        box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3);
-        transition: all 0.2s ease;
-    }
-    .tap-button:hover {
-        transform: scale(1.05);
-        box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.4);
-    }
-    .tap-button:active {
-        transform: scale(0.98);
-        box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.2);
-    }
-    .center-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# === Slide Logic ===
-if "slide" not in st.session_state:
-    st.session_state.slide = 1
-if "trip_data" not in st.session_state:
-    st.session_state.trip_data = {}
-if "welcome_spoken" not in st.session_state:
-    st.session_state.welcome_spoken = False
-
-# === Slide 1: Glowing Tap to Activate ===
-if st.session_state.slide == 1:
+# CSS Styling for glowing button and other elements
+try:
     st.markdown("""
-        <div class="center-container">
-            <form action="?activate=1" method="post">
-                <button type="submit" class="tap-button">Tap to Activate</button>
-            </form>
-        </div>
-    """, unsafe_allow_html=True)
-
-    if "activate" in st.query_params:
-        st.session_state.slide = 2
-        st.session_state.welcome_spoken = False
-        st.rerun()
-
-# === Slide 2: Input ===
-elif st.session_state.slide == 2:
-    if not st.session_state.welcome_spoken:
-        components.html("<script>speak('Welcome to the Smart AI Planner. Let’s begin.');</script>", height=0)
-        st.session_state.welcome_spoken = True
-
-    st.write("Plan your trip")
-
-    is_round_trip = st.checkbox("Round Trip", value=False)
-    start_input = st.text_input("Start City", "")
-    start_suggestion, start_iata = get_city_suggestion(start_input)
-    if start_iata:
-        st.write(f"Did you mean {start_suggestion} ({start_iata})?")
-        start_city = start_iata
-    else:
-        start_city = start_input.upper()
-
-    dest_input = st.text_input("Destination City", "")
-    dest_suggestion, dest_iata = get_city_suggestion(dest_input)
-    if dest_iata:
-        st.write(f"Did you mean {dest_suggestion} ({dest_iata})?")
-        dest_city = dest_iata
-    else:
-        dest_city = dest_input.upper()
-
-    today = datetime.now().date()
-    departure_date = st.date_input("Departure Date", min_value=today, value=today)
-    return_date = None
-    if is_round_trip:
-        return_date = st.date_input("Return Date", min_value=departure_date + timedelta(days=1))
-
-    priority = st.selectbox("Priority", ["Balanced", "Cheapest", "Fastest"])
-    time_weight = {"Balanced": 0.5, "Cheapest": 0.2, "Fastest": 0.8}[priority]
-
-    if st.button("Search Flights"):
-        st.session_state.trip_data = {
-            "start": start_city,
-            "dest": dest_city,
-            "departure_date": departure_date.strftime("%Y-%m-%d"),
-            "return_date": return_date.strftime("%Y-%m-%d") if return_date else None,
-            "time_weight": time_weight
+        <style>
+        .tap-button {
+            background: linear-gradient(to right, #00c6ff, #0072ff);
+            border: none;
+            border-radius: 50px;
+            padding: 20px 60px;
+            font-size: 22px;
+            font-family: 'Poppins', sans-serif;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+            width: 100%;
+            max-width: 300px;
+            text-align: center;
+            margin: 0 auto;
+            display: block;
         }
-        st.session_state.slide = 3
-        st.rerun()
+        .tap-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.4);
+        }
+        .tap-button:active {
+            transform: scale(0.98);
+            box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        .center-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .stCheckbox > label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .stCheckbox > label > input {
+            display: none;
+        }
+        .stCheckbox > label > span {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 25px;
+            background-color: #ccc;
+            border-radius: 25px;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+        }
+        .stCheckbox > label > span::after {
+            content: '';
+            position: absolute;
+            width: 21px;
+            height: 21px;
+            left: 2px;
+            top: 2px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+        .stCheckbox > label > input:checked + span {
+            background-color: #0072ff;
+        }
+        .stCheckbox > label > input:checked + span::after {
+            transform: translateX(calc(100% - 23px));
+        }
+        .calendar-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 20px;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+            animation: slide-up 0.5s ease;
+            z-index: 1000;
+        }
+        @keyframes slide-up {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .stDateInput > div > input {
+            background-color: #f0f2f6;
+            border-radius: 10px;
+            padding: 10px;
+        }
+        .stSelectbox > div > div {
+            background-color: #f0f2f6;
+            border-radius: 10px;
+        }
+        .mic-button {
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            background-color: #f0f2f6;
+        }
+        .mic-button:hover {
+            background-color: #e0e2e6;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+except Exception as e:
+    st.error(f"Failed to load CSS: {str(e)}")
 
-# === Slide 3: Flight Results ===
-elif st.session_state.slide == 3:
-    trip = st.session_state.trip_data
-    st.write(f"Finding flights from {trip['start']} to {trip['dest']}...")
-    flights, error = fetch_flights(trip["start"], trip["dest"], trip["departure_date"], trip["return_date"])
-    if error:
-        st.error(error)
-        components.html(f"<script>speak('{error}');</script>", height=0)
-    elif flights:
-        best = pattern_collapse_generator(flights, trip["time_weight"])
-        if best:
-            seg = best["itineraries"][0]["segments"][0]
-            summary = f"{seg['departure']['iataCode']} → {seg['arrival']['iataCode']}, Price ${best['price']['total']}"
-            st.success(summary)
-            components.html(f"<script>speak('{summary}');</script>", height=0)
-        else:
-            msg = "No suitable flight found."
-            st.error(msg)
-            components.html(f"<script>speak('{msg}');</script>", height=0)
+# Streamlit app with slides (wrapped in global try-except)
+try:
+    # State management for slides
+    if "slide" not in st.session_state:
+        st.session_state.slide = 1
+    if "trip_data" not in st.session_state:
+        st.session_state.trip_data = {}
+    if "welcome_spoken" not in st.session_state:
+        st.session_state.welcome_spoken = False
 
-    if st.button("New Search"):
-        st.session_state.slide = 2
-        st.rerun()
+    # Slide 1: Glowing Tap to Activate
+    if st.session_state.slide == 1:
+        with st.container():
+            st.markdown('<div class="center-container">', unsafe_allow_html=True)
+            if st.button("Tap to Activate", key="tap_to_activate"):
+                st.session_state.slide = 2
+                st.session_state.welcome_spoken = False
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
 
-# === Footer ===
-st.markdown("*Powered by Shah’s Pattern Collapse Generator and Earth Prime*")
+    # Slide 2: Input
+    elif st.session_state.slide == 2:
+        try:
+            add_voice_scripts()
+            if not st.session_state.welcome_spoken:
+                components.html("<script>speak('Welcome to the Smart AI Planner. Let’s begin.');</script>", height=0)
+                st.session_state.welcome_spoken = True
+
+            st.write("Plan your trip")
+
+            is_round_trip = st.checkbox("Round Trip", value=False, key="round_trip")
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                start_input = st.text_input("Start City", "", key="start_city")
+                start_suggestion, start_iata = get_city_suggestion(start_input)
+                if start_iata:
+                    st.write(f"Did you mean {start_suggestion} ({start_iata})?")
+                    start_city = start_iata
+                else:
+                    start_city = start_input.upper()
+            with col2:
+                st.markdown(
+                    '<button id="micButton_start_city" class="mic-button" onclick="startListening(\'start_city\')">🎙️</button>',
+                    unsafe_allow_html=True
+                )
+
+            col3, col4 = st.columns([3, 1])
+            with col3:
+                dest_input = st.text_input("Destination City", "", key="dest_city")
+                dest_suggestion, dest_iata = get_city_suggestion(dest_input)
+                if dest_iata:
+                    st.write(f"Did you mean {dest_suggestion} ({dest_iata})?")
+                    dest_city = dest_iata
+                else:
+                    dest_city = dest_input.upper()
+            with col4:
+                st.markdown(
+                    '<button id="micButton_dest_city" class="mic-button" onclick="startListening(\'dest_city\')">🎙️</button>',
+                    unsafe_allow_html=True
+                )
+
+            today = datetime.now().date()
+            departure_date = st.date_input("Departure Date", min_value=today, value=today)
+            return_date = None
+            if is_round_trip:
+                return_date = st.date_input("Return Date", min_value=departure_date + timedelta(days=1))
+
+            priority = st.selectbox("Priority", ["Balanced", "Cheapest", "Fastest"])
+            time_weight = {"Balanced": 0.5, "Cheapest": 0.2, "Fastest": 0.8}[priority]
+
+            if st.button("Search Flights"):
+                st.session_state.trip_data = {
+                    "start": start_city,
+                    "dest": dest_city,
+                    "departure_date": departure_date.strftime("%Y-%m-%d"),
+                    "return_date": return_date.strftime("%Y-%m-%d") if return_date else None,
+                    "time_weight": time_weight
+                }
+                st.session_state.slide = 3
+                st.rerun()
+        except Exception as e:
+            st.error(f"Error on Slide 2: {str(e)}")
+            st.error(f"Traceback: {traceback.format_exc()}")
+
+    # Slide 3: Flight Results
+    elif st.session_state.slide == 3:
+        try:
+            trip = st.session_state.trip_data
+            st.write(f"Finding flights from {trip['start']} to {trip['dest']}...")
+            flights, error = fetch_flights(trip["start"], trip["dest"], trip["departure_date"], trip["return_date"])
+            if error:
+                st.error(error)
+                components.html(f"<script>speak('{error}');</script>", height=0)
+            elif flights:
+                best = pattern_collapse_generator(flights, trip["time_weight"])
+                if best:
+                    seg = best["itineraries"][0]["segments"][0]
+                    summary = f"{seg['departure']['iataCode']} to {seg['arrival']['iataCode']}, Price ${best['price']['total']}"
+                    st.success(summary)
+                    components.html(f"<script>speak('{summary}');</script>", height=0)
+                else:
+                    msg = "No suitable flight found."
+                    st.error(msg)
+                    components.html(f"<script>speak('{msg}');</script>", height=0)
+
+            if st.button("New Search"):
+                st.session_state.slide = 2
+                st.rerun()
+        except Exception as e:
+            st.error(f"Error on Slide 3: {str(e)}")
+            st.error(f"Traceback: {traceback.format_exc()}")
+
+    # Footer
+    try:
+        st.markdown("*Powered by Shah’s Pattern Collapse Generator and Earth Prime*")
+    except Exception as e:
+        pass
+
+except Exception as e:
+    st.error(f"Failed to launch the app: {str(e)}")
+    st.error("Please check the Streamlit Cloud logs for more details.")
+    st.error(f"Traceback: {traceback.format_exc()}")
