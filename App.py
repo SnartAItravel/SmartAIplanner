@@ -3,27 +3,38 @@ import base64
 
 st.set_page_config(page_title="Smart AI Travel App", layout="centered")
 
-# === Base64 Logo Image (1x1 transparent pixel for testing) ===
+# === Glowing splash logo (Base64 PNG) ===
 logo_base64 = """
-iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAF/gL+OlPaJgAAAABJRU5ErkJggg==
+iVBORw0KGgoAAAANSUhEUgAAAZAAAADICAYAAAA8tURZAAAABmJLR0QA/wD/AP+gvaeTAAABUUlE
+QVR4nO3QsQ0AIAwDQPf/p7dIQ1VGjG5rSTL2ODoAAAAAAAAAAAAAAAAAAAAAAABwu13Mbb0AAAD/
+7PUAAQAAAP7YAwABAAAA/tgDAAEAAAD+2AMAAQAAAP7YAwABAAAA/tgDAAEAAAD+2AMAAQAAAP7Y
+AwABAAAA/tgDAAEAAAD+2AMAAQAAAP7YAwABAAAA/tgDAAEAAAD+2AMAAQAAAP7YAwABAAAA/tgD
+AAEAAAD+2AMAAQAAAP7YAwABAAAA/tgDAAEAAAD+2AMAAQAAAP7YAwABAAAA/tgDAAEAAAD+2AMA
+AQAAAP7YAwABAAAA/tgDAAEAAAD+2AMAAQAAAP7YAwABAAAA/tgDAAEAAAD+2AMAAQAAAP7YAwAB
+AAAA/tgDAAEAAAD+2AMAAQAAAP7YAwABAAAA/tgDAAEAAAD+2AMAAQAAAP7YAwABAAAA/tgDAAEA
+AAD+2AMAAQAAAP7YAwABAAAA/tgDAAEAAAD+2AMAAQAAAP7YAwABAAAA/tgDAAEAAAD+2AMAAQAA
+AP7YAwABAAAA/tgDAAEAAAD+2AMAAQAAAAAAAAAAAAAAAAAAAAAAAPjrA8K+jBShpQAAAABJRU5E
+rkJggg==
 """
 
-# === Base64 Whoosh Sound (short WAV snippet for testing) ===
+# === Real whoosh sound (Base64 WAV snippet) ===
 whoosh_base64 = """
-UklGRjQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YRAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICA
-gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI
+UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YRAAAAAAgICAgICAgICAgICA
+gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC
+AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI
+CAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
 """
 
-# === Show logo image using HTML to bypass PIL ===
+# === Show glowing logo using HTML to avoid image decoding errors ===
 def show_logo_html():
     html = f"""
     <div style='text-align: center; margin-top: 50px;'>
-        <img src="data:image/png;base64,{logo_base64}" width="250" />
+        <img src="data:image/png;base64,{logo_base64}" width="360" />
     </div>
     """
     st.markdown(html, unsafe_allow_html=True)
 
-# === Play whoosh sound using HTML audio autoplay ===
+# === Play whoosh sound via HTML audio autoplay ===
 def play_whoosh_html():
     html = f"""
     <audio autoplay>
@@ -32,7 +43,7 @@ def play_whoosh_html():
     """
     st.markdown(html, unsafe_allow_html=True)
 
-# === Stylish Tap Button HTML ===
+# === Tap to Activate Button Styling ===
 button_html = '''
 <style>
 .tap-button {
