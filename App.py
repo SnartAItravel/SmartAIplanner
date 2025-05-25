@@ -4,14 +4,22 @@ import json
 import requests
 from datetime import datetime, timedelta
 import re
-from fuzzywuzzy import process
+
+# Try to import fuzzywuzzy, with a fallback
+try:
+    from fuzzywuzzy import process
+    FUZZY_AVAILABLE = True
+except ImportError:
+    FUZZY_AVAILABLE = False
+    process = None
+    st.warning("Fuzzy matching unavailable. Please install fuzzywuzzy. City suggestions will be limited.")
 
 # Amadeus API setup
 AMADEUS_API_KEY = "BKarFHJJ1GGh0CVl0qhvmLL45jmeN4Uz"
 AMADEUS_API_SECRET = "Tr9aaVLysU5LQSWF"
 BASE_URL = "https://test.api.amadeus.com"
 
-# City to IATA code mapping (simplified for demo)
+# City to IATA code mapping
 CITY_TO_IATA = {
     "Copenhagen": "CPH",
     "Madrid": "MAD",
@@ -112,14 +120,20 @@ def pattern_collapse_generator(flights, time_weight=0.5):
     except Exception as e:
         return None
 
-# Smart city recognition
+# Smart city recognition (with fallback if fuzzywuzzy isn't available)
 def get_city_suggestion(user_input):
     if not user_input:
         return None, None
     cities = list(CITY_TO_IATA.keys())
-    best_match, score = process.extractOne(user_input, cities)
-    if score > 80:  # Confidence threshold
-        return best_match, CITY_TO_IATA[best_match]
+    if FUZZY_AVAILABLE:
+        best_match, score = process.extractOne(user_input, cities)
+        if score > 80:  # Confidence threshold
+            return best_match, CITY_TO_IATA[best_match]
+    # Fallback: simple string matching
+    user_input = user_input.lower()
+    for city in cities:
+        if user_input in city.lower():
+            return city, CITY_TO_IATA[city]
     return None, None
 
 # JavaScript for voice input and output
@@ -200,7 +214,7 @@ st.markdown(
     """
     <style>
         .glowing-button {
-            background-color: #1E90FF; /* Dodger Blue */
+            background-color: #1E90FF;
             color: white;
             padding: 15px 30px;
             border: none;
@@ -223,7 +237,6 @@ st.markdown(
             50% { box-shadow: 0 0 20px #1E90FF, 0 0 40px #1E90FF, 0 0 60px #1E90FF; }
             100% { box-shadow: 0 0 15px #1E90FF, 0 0 30px #1E90FF, 0 0 45px #1E90FF; }
         }
-        /* Toggle Switch Styling */
         .stCheckbox > label {
             display: flex;
             align-items: center;
@@ -257,7 +270,7 @@ st.markdown(
             background-color: #1E90FF;
         }
         .stCheckbox > label > input:checked + span::after {
-            transform: translateX(23px); /* Adjusted to move fully to the right */
+            transform: translateX(23px);
         }
         .calendar-container {
             position: fixed;
@@ -301,7 +314,6 @@ st.markdown(
 )
 
 # Streamlit app with slides
-st.title("SHA’s Cosmic Travel Planner 🌌")
 add_voice_scripts()  # Add voice scripts
 
 # State management for slides
@@ -315,7 +327,6 @@ if "welcome_spoken" not in st.session_state:
 # Slide 1: Tap to Activate (only element on screen)
 if st.session_state.slide == 1:
     # Clear the screen except for the button
-    st.empty()  # Clear previous elements
     st.markdown("<h3 style='text-align: center;'>Welcome to the Eternal Now of Travel! ✨</h3>", unsafe_allow_html=True)
     st.write("")
     if st.button("Tap to Activate", key="tap_to_activate"):
