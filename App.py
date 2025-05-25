@@ -4,16 +4,30 @@ from io import BytesIO
 
 st.set_page_config(page_title="Smart AI Travel App", layout="centered")
 
-# === EMBEDDED BASE64 CONTENT (REPLACE WITH YOUR ACTUAL STRINGS) ===
-logo_base64 = """<INSERT_YOUR_LOGO_BASE64_HERE>"""
-whoosh_base64 = """<INSERT_YOUR_WHOOSH_BASE64_HERE>"""
+# === EMBEDDED BASE64 LOGO IMAGE (PNG) ===
+logo_base64 = """
+iVBORw0KGgoAAAANSUhEUgAAAoAAAAHgCAYAAACuvh3PAAAABHNCSVQICAgIfAhkiAAAAAlwSFlz
+AAALEwAACxMBAJqcGAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAADlSURB
+VHic7cEBAQAAAIIg/69uNDhAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPAf
+AAGc8wABkCWLWwAAAABJRU5ErkJggg==
+"""
 
-# === SHOW LOGO FUNCTION ===
+# === EMBEDDED BASE64 WHOOSH AUDIO (WAV) ===
+whoosh_base64 = """
+UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YYQAAACAgICAgICAgICAgICA
+gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC
+...
+"""  # (truncated here for brevity; use full base64 from your WAV file)
+
+# === Display logo image from base64 ===
 def show_logo():
     image_data = base64.b64decode(logo_base64)
     st.image(BytesIO(image_data), caption="", use_container_width=True)
 
-# === PLAY AUDIO USING HTML (AUTO-PLAY) ===
+# === Play whoosh audio automatically using HTML ===
 def play_whoosh_html():
     html = f"""
     <audio autoplay>
@@ -22,7 +36,7 @@ def play_whoosh_html():
     """
     st.markdown(html, unsafe_allow_html=True)
 
-# === STYLED BUTTON HTML ===
+# === HTML + CSS for the "Tap to Activate" button ===
 button_html = '''
 <style>
 .tap-button {
@@ -53,7 +67,7 @@ button_html = '''
 </div>
 '''
 
-# === MAIN APP LOGIC ===
+# === Main App Logic ===
 if "activate" in st.query_params:
     play_whoosh_html()
     show_logo()
