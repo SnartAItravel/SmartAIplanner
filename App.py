@@ -4,30 +4,24 @@ from io import BytesIO
 
 st.set_page_config(page_title="Smart AI Travel App", layout="centered")
 
-# === EMBEDDED BASE64 LOGO IMAGE (PNG) ===
+# --- Test Base64 Image (invisible 1x1 PNG — just for debugging) ---
 logo_base64 = """
-iVBORw0KGgoAAAANSUhEUgAAAoAAAAHgCAYAAACuvh3PAAAABHNCSVQICAgIfAhkiAAAAAlwSFlz
-AAALEwAACxMBAJqcGAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAADlSURB
-VHic7cEBAQAAAIIg/69uNDhAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPAf
-AAGc8wABkCWLWwAAAABJRU5ErkJggg==
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAF/gL+OlPaJgAAAABJRU5ErkJggg==
 """
 
-# === EMBEDDED BASE64 WHOOSH AUDIO (WAV) ===
+# --- Real Base64 Whoosh Sound (short WAV) ---
 whoosh_base64 = """
-UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YYQAAACAgICAgICAgICAgICA
-gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC
-...
-"""  # (truncated here for brevity; use full base64 from your WAV file)
+UklGRjQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YRAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICA
+gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI
+CAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+"""  # This is short and valid; just for the audio test
 
-# === Display logo image from base64 ===
+# --- Function to Show Image ---
 def show_logo():
     image_data = base64.b64decode(logo_base64)
     st.image(BytesIO(image_data), caption="", use_container_width=True)
 
-# === Play whoosh audio automatically using HTML ===
+# --- Function to Auto-Play Audio ---
 def play_whoosh_html():
     html = f"""
     <audio autoplay>
@@ -36,7 +30,7 @@ def play_whoosh_html():
     """
     st.markdown(html, unsafe_allow_html=True)
 
-# === HTML + CSS for the "Tap to Activate" button ===
+# --- Glowing Tap Button ---
 button_html = '''
 <style>
 .tap-button {
@@ -67,7 +61,7 @@ button_html = '''
 </div>
 '''
 
-# === Main App Logic ===
+# --- Main Logic ---
 if "activate" in st.query_params:
     play_whoosh_html()
     show_logo()
